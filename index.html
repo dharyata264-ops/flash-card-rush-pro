@@ -1,0 +1,1189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FlashCard Rush Pro</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      color: #f8fafc;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px 0;
+      overflow-x: hidden;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 540px;
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 24px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      text-align: center;
+      position: relative;
+    }
+
+    header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 12px;
+      color: #38bdf8;
+    }
+
+    .high-score-banner {
+      background: rgba(56, 189, 248, 0.1);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: #38bdf8;
+      font-size: 0.9rem;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 20px;
+      margin-bottom: 16px;
+      display: inline-block;
+    }
+
+    /* Tab Navigation */
+    .tab-nav {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 2px solid #334155;
+      padding-bottom: 8px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: #94a3b8;
+      font-size: 0.95rem;
+      font-weight: bold;
+      cursor: pointer;
+      border-radius: 6px;
+      transition: all 0.2s;
+    }
+
+    .tab-btn.active {
+      background: #334155;
+      color: #38bdf8;
+    }
+
+    /* Game Mode Switcher */
+    .mode-selector {
+      display: flex;
+      justify-content: center;
+      background: #0f172a;
+      border-radius: 20px;
+      padding: 4px;
+      margin-bottom: 16px;
+      border: 1px solid #334155;
+    }
+
+    .mode-btn {
+      flex: 1;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 16px;
+      background: transparent;
+      color: #94a3b8;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .mode-btn.active {
+      background: #38bdf8;
+      color: #0f172a;
+    }
+
+    /* Category Filter Bar */
+    .category-filter-bar {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+      background: #0f172a;
+      padding: 8px 12px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    .category-select {
+      background: #1e293b;
+      color: #38bdf8;
+      border: 1px solid #334155;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      outline: none;
+    }
+
+    /* Difficulty Selector */
+    .difficulty-selector {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .diff-btn {
+      padding: 8px 14px;
+      border: 1px solid #334155;
+      border-radius: 20px;
+      background: #0f172a;
+      color: #94a3b8;
+      font-weight: bold;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .diff-btn.active {
+      color: #0f172a;
+      border-color: transparent;
+    }
+
+    .diff-btn[data-diff="easy"].active { background: #22c55e; }
+    .diff-btn[data-diff="medium"].active { background: #eab308; }
+    .diff-btn[data-diff="hard"].active { background: #ef4444; color: #ffffff; }
+
+    .stats-bar {
+      display: flex;
+      justify-content: space-around;
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 24px;
+      font-weight: bold;
+    }
+
+    /* Particle Overlay Canvas */
+    #particleCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 10;
+    }
+
+    /* Flashcard Styles */
+    .card-container {
+      perspective: 1000px;
+      margin-bottom: 24px;
+      position: relative;
+    }
+
+    .card {
+      width: 100%;
+      height: 220px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s ease;
+      cursor: pointer;
+    }
+
+    .card.flipped {
+      transform: rotateY(180deg);
+    }
+
+    .card-face {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      border-radius: 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 24px 20px 20px;
+      font-size: 1.3rem;
+      font-weight: 600;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+      word-break: break-word;
+    }
+
+    .card-tag {
+      position: absolute;
+      top: 12px;
+      left: 14px;
+      background: rgba(56, 189, 248, 0.2);
+      border: 1px solid rgba(56, 189, 248, 0.4);
+      color: #38bdf8;
+      font-size: 0.75rem;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .card-front {
+      background: #334155;
+      color: #f8fafc;
+    }
+
+    .card-back {
+      background: #3b82f6;
+      color: #ffffff;
+      transform: rotateY(180deg);
+    }
+
+    /* Controls & Buttons */
+    .controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .answer-btns, .study-nav-btns {
+      display: flex;
+      gap: 12px;
+    }
+
+    .btn {
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+      flex: 1;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .primary { background: #38bdf8; color: #0f172a; }
+    .secondary { background: #64748b; color: #ffffff; }
+    .success { background: #22c55e; color: #ffffff; }
+    .danger { background: #ef4444; color: #ffffff; }
+
+    .hidden { display: none !important; }
+
+    /* Custom Deck Manager Section */
+    .deck-form {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-bottom: 24px;
+      background: #0f172a;
+      padding: 16px;
+      border-radius: 8px;
+      text-align: left;
+    }
+
+    .deck-form label {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      font-weight: bold;
+    }
+
+    .deck-form input, .deck-form select {
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #334155;
+      background: #1e293b;
+      color: #f8fafc;
+      font-size: 0.95rem;
+    }
+
+    .deck-form input:focus, .deck-form select:focus {
+      outline: none;
+      border-color: #38bdf8;
+    }
+
+    .card-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      font-size: 0.9rem;
+      color: #94a3b8;
+    }
+
+    .card-list {
+      max-height: 220px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding-right: 4px;
+    }
+
+    .card-item {
+      background: #0f172a;
+      padding: 12px;
+      border-radius: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    .card-item-text {
+      flex: 1;
+      padding-right: 8px;
+    }
+
+    .card-item-text span {
+      display: block;
+      color: #38bdf8;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .card-item-category {
+      display: inline-block;
+      font-size: 0.7rem;
+      color: #22c55e;
+      background: rgba(34, 197, 94, 0.1);
+      padding: 2px 6px;
+      border-radius: 4px;
+      margin-top: 4px;
+    }
+
+    .delete-card-btn {
+      background: transparent;
+      border: none;
+      color: #ef4444;
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px 8px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100;
+    }
+
+    .modal {
+      background: #1e293b;
+      padding: 32px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal h2 {
+      color: #ef4444;
+      margin-bottom: 12px;
+    }
+
+    .modal p {
+      margin-bottom: 8px;
+      font-size: 1.1rem;
+    }
+
+    .new-record {
+      color: #22c55e;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .modal button {
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <canvas id="particleCanvas"></canvas>
+
+    <header>
+      <h1>FlashCard Rush Pro</h1>
+
+      <!-- Navigation Tabs -->
+      <div class="tab-nav">
+        <button class="tab-btn active" id="tabGame">🎮 Play / Practice</button>
+        <button class="tab-btn" id="tabDeck">📝 Custom Cards (<span id="customCount">0</span>)</button>
+      </div>
+
+      <!-- Play View Header Options -->
+      <div id="playHeaderGroup">
+        <!-- Mode Switcher -->
+        <div class="mode-selector">
+          <button class="mode-btn active" id="modeRushBtn">🕹️ Rush Mode</button>
+          <button class="mode-btn" id="modeStudyBtn">📚 Study Practice</button>
+        </div>
+
+        <!-- Category Selector -->
+        <div class="category-filter-bar">
+          <label for="filterCategory">🏷️ Category:</label>
+          <select id="filterCategory" class="category-select">
+            <option value="All">All Categories</option>
+          </select>
+        </div>
+
+        <!-- Rush Mode Options -->
+        <div id="rushOptions">
+          <div class="difficulty-selector" id="diffSelector">
+            <button class="diff-btn" data-diff="easy">Easy (45s)</button>
+            <button class="diff-btn active" data-diff="medium">Medium (30s)</button>
+            <button class="diff-btn" data-diff="hard">Hard (15s)</button>
+          </div>
+
+          <div class="high-score-banner">
+            🏆 Best (<span id="diffLabel">Medium</span>): <span id="highScore">0</span>
+          </div>
+
+          <div class="stats-bar">
+            <div class="stat">Score: <span id="score">0</span></div>
+            <div class="stat">Timer: <span id="timer">30</span>s</div>
+            <div class="stat">Streak: <span id="streak">0</span>🔥</div>
+          </div>
+        </div>
+
+        <!-- Study Mode Counter -->
+        <div id="studyOptions" class="stats-bar hidden">
+          <div class="stat" style="width:100%;">Card: <span id="studyCardNum">1</span> / <span id="studyTotalCards">0</span></div>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- TAB 1: GAME / STUDY PLAY SECTION -->
+      <section id="gameSection" class="view-section">
+        <div class="card-container" id="cardContainer">
+          <div class="card" id="flashcard">
+            <div class="card-face card-front">
+              <span class="card-tag" id="cardTagFront">General</span>
+              <span id="cardFront">Select Mode & Press Start!</span>
+            </div>
+            <div class="card-face card-back">
+              <span id="cardBack">Answers will appear here.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- RUSH MODE CONTROLS -->
+        <div class="controls" id="rushControls">
+          <button id="startBtn" class="btn primary">Start Rush</button>
+          <button id="flipBtn" class="btn secondary" disabled>Flip Card</button>
+          <div class="answer-btns">
+            <button id="wrongBtn" class="btn danger" disabled>Incorrect ❌</button>
+            <button id="correctBtn" class="btn success" disabled>Correct ✅</button>
+          </div>
+        </div>
+
+        <!-- STUDY MODE CONTROLS -->
+        <div class="controls hidden" id="studyControls">
+          <button id="studyFlipBtn" class="btn primary">Flip Card</button>
+          <div class="study-nav-btns">
+            <button id="prevCardBtn" class="btn secondary">⬅️ Prev</button>
+            <button id="shuffleDeckBtn" class="btn secondary">🔀 Shuffle</button>
+            <button id="nextCardBtn" class="btn secondary">Next ➡️</button>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB 2: DECK BUILDER SECTION -->
+      <section id="deckSection" class="view-section hidden">
+        <form id="addCardForm" class="deck-form">
+          <label for="inputQuestion">Question / Prompt</label>
+          <input type="text" id="inputQuestion" placeholder="e.g., What is 15 x 4?" required />
+
+          <label for="inputAnswer">Answer</label>
+          <input type="text" id="inputAnswer" placeholder="e.g., 60" required />
+
+          <label for="inputCategory">Category Tag</label>
+          <input type="text" id="inputCategory" placeholder="e.g., Math, Science, Geography" list="categorySuggestions" required />
+          <datalist id="categorySuggestions"></datalist>
+
+          <button type="submit" class="btn primary">Add Flashcard</button>
+        </form>
+
+        <div class="card-list-header">
+          <span>Active Flashcards Deck</span>
+          <button id="resetDeckBtn" style="background:none; border:none; color:#ef4444; cursor:pointer; font-size:0.8rem;">Reset to Default</button>
+        </div>
+
+        <div class="card-list" id="cardList">
+          <!-- Dynamic card items rendered here -->
+        </div>
+      </section>
+    </main>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay hidden" id="gameOverModal">
+      <div class="modal">
+        <h2>Time's Up!</h2>
+        <p>Your Final Score: <strong id="finalScore">0</strong></p>
+        <p>Highest Streak: <strong id="finalStreak">0</strong></p>
+        <div id="newRecordMsg" class="new-record hidden">🎉 New High Score! 🎉</div>
+        <button id="restartBtn" class="btn primary">Play Again</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Particle Burst Animation
+    class ParticleFX {
+      constructor(canvas) {
+        this.canvas = canvas;
+        this.ctx = canvas.getContext('2d');
+        this.particles = [];
+        this.animId = null;
+        this.resize();
+
+        window.addEventListener('resize', () => this.resize());
+      }
+
+      resize() {
+        this.canvas.width = this.canvas.parentElement.clientWidth;
+        this.canvas.height = this.canvas.parentElement.clientHeight;
+      }
+
+      burst(x, y, count = 40) {
+        const colors = ['#22c55e', '#38bdf8', '#eab308', '#a855f7', '#ec4899', '#ffffff'];
+        
+        for (let i = 0; i < count; i++) {
+          const angle = Math.random() * Math.PI * 2;
+          const speed = Math.random() * 8 + 2;
+          this.particles.push({
+            x,
+            y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed - 2,
+            size: Math.random() * 6 + 3,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            alpha: 1,
+            decay: Math.random() * 0.025 + 0.015,
+            gravity: 0.2
+          });
+        }
+
+        if (!this.animId) {
+          this.animate();
+        }
+      }
+
+      animate() {
+        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+        this.particles.forEach((p, index) => {
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += p.gravity;
+          p.alpha -= p.decay;
+
+          this.ctx.save();
+          this.ctx.globalAlpha = Math.max(0, p.alpha);
+          this.ctx.fillStyle = p.color;
+          this.ctx.beginPath();
+          this.ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+
+          if (p.alpha <= 0) {
+            this.particles.splice(index, 1);
+          }
+        });
+
+        if (this.particles.length > 0) {
+          this.animId = requestAnimationFrame(() => this.animate());
+        } else {
+          this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+          this.animId = null;
+        }
+      }
+    }
+
+    // Audio Synthesizer via Web Audio API
+    class SoundEffects {
+      constructor() {
+        this.ctx = null;
+      }
+
+      init() {
+        if (!this.ctx) {
+          const AudioContext = window.AudioContext || window.webkitAudioContext;
+          this.ctx = new AudioContext();
+        }
+        if (this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+
+      playFlip() {
+        this.init();
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, this.ctx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(600, this.ctx.currentTime + 0.08);
+
+        gain.gain.setValueAtTime(0.2, this.ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.08);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(this.ctx.currentTime + 0.08);
+      }
+
+      playCorrect() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(523.25, now);
+        osc.frequency.setValueAtTime(659.25, now + 0.08);
+        osc.frequency.setValueAtTime(783.99, now + 0.16);
+
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(now + 0.3);
+      }
+
+      playWrong() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(220, now);
+        osc.frequency.setValueAtTime(180, now + 0.1);
+
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+
+        osc.start();
+        osc.stop(now + 0.25);
+      }
+
+      playTimeUp() {
+        this.init();
+        const now = this.ctx.currentTime;
+        const notes = [400, 350, 300, 250];
+
+        notes.forEach((freq, i) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(freq, now + i * 0.12);
+
+          gain.gain.setValueAtTime(0.15, now + i * 0.12);
+          gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.12 + 0.1);
+
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+
+          osc.start(now + i * 0.12);
+          osc.stop(now + i * 0.12 + 0.1);
+        });
+      }
+    }
+
+    const sfx = new SoundEffects();
+    const fxCanvas = document.getElementById('particleCanvas');
+    const particleFX = new ParticleFX(fxCanvas);
+
+    // Default Deck with Categories
+    const defaultCards = [
+      { question: "What is the capital of France?", answer: "Paris", category: "Geography" },
+      { question: "Which language runs in a web browser?", answer: "JavaScript", category: "Coding" },
+      { question: "What does CSS stand for?", answer: "Cascading Style Sheets", category: "Coding" },
+      { question: "What is 12 x 12?", answer: "144", category: "Math" },
+      { question: "Which planet is known as the Red Planet?", answer: "Mars", category: "Science" },
+      { question: "What HTML tag is used to link a JS file?", answer: "<script>", category: "Coding" }
+    ];
+
+    // Difficulty Settings
+    const DIFFICULTY_CONFIG = {
+      easy: { time: 45, multiplier: 1 },
+      medium: { time: 30, multiplier: 1.5 },
+      hard: { time: 15, multiplier: 2 }
+    };
+
+    // App State
+    let cardsData = JSON.parse(localStorage.getItem('flashcard_rush_custom_cards')) || [...defaultCards];
+    let activeDeck = [];
+    let currentMode = 'rush'; // 'rush' or 'study'
+    let currentCategory = 'All';
+    let currentDifficulty = 'medium';
+    let currentCardIndex = 0;
+    let score = 0;
+    let streak = 0;
+    let maxStreak = 0;
+    let timeLeft = DIFFICULTY_CONFIG[currentDifficulty].time;
+    let timerInterval = null;
+    let isGameActive = false;
+
+    // DOM Elements
+    const tabGame = document.getElementById('tabGame');
+    const tabDeck = document.getElementById('tabDeck');
+    const gameSection = document.getElementById('gameSection');
+    const deckSection = document.getElementById('deckSection');
+    const playHeaderGroup = document.getElementById('playHeaderGroup');
+    const customCountEl = document.getElementById('customCount');
+
+    const modeRushBtn = document.getElementById('modeRushBtn');
+    const modeStudyBtn = document.getElementById('modeStudyBtn');
+    const filterCategory = document.getElementById('filterCategory');
+    const rushOptions = document.getElementById('rushOptions');
+    const studyOptions = document.getElementById('studyOptions');
+
+    const rushControls = document.getElementById('rushControls');
+    const studyControls = document.getElementById('studyControls');
+
+    const studyCardNumEl = document.getElementById('studyCardNum');
+    const studyTotalCardsEl = document.getElementById('studyTotalCards');
+
+    const cardContainer = document.getElementById('cardContainer');
+    const cardElement = document.getElementById('flashcard');
+    const cardFront = document.getElementById('cardFront');
+    const cardBack = document.getElementById('cardBack');
+    const cardTagFront = document.getElementById('cardTagFront');
+    const scoreEl = document.getElementById('score');
+    const timerEl = document.getElementById('timer');
+    const streakEl = document.getElementById('streak');
+    const highScoreEl = document.getElementById('highScore');
+    const diffLabelEl = document.getElementById('diffLabel');
+    const diffButtons = document.querySelectorAll('.diff-btn');
+
+    const startBtn = document.getElementById('startBtn');
+    const flipBtn = document.getElementById('flipBtn');
+    const correctBtn = document.getElementById('correctBtn');
+    const wrongBtn = document.getElementById('wrongBtn');
+
+    const studyFlipBtn = document.getElementById('studyFlipBtn');
+    const prevCardBtn = document.getElementById('prevCardBtn');
+    const nextCardBtn = document.getElementById('nextCardBtn');
+    const shuffleDeckBtn = document.getElementById('shuffleDeckBtn');
+
+    const gameOverModal = document.getElementById('gameOverModal');
+    const finalScoreEl = document.getElementById('finalScore');
+    const finalStreakEl = document.getElementById('finalStreak');
+    const newRecordMsg = document.getElementById('newRecordMsg');
+    const restartBtn = document.getElementById('restartBtn');
+
+    const addCardForm = document.getElementById('addCardForm');
+    const inputQuestion = document.getElementById('inputQuestion');
+    const inputAnswer = document.getElementById('inputAnswer');
+    const inputCategory = document.getElementById('inputCategory');
+    const categorySuggestions = document.getElementById('categorySuggestions');
+    const cardList = document.getElementById('cardList');
+    const resetDeckBtn = document.getElementById('resetDeckBtn');
+
+    // Navigation Tabs Toggle
+    tabGame.addEventListener('click', () => {
+      tabGame.classList.add('active');
+      tabDeck.classList.remove('active');
+      gameSection.classList.remove('hidden');
+      deckSection.classList.add('hidden');
+      playHeaderGroup.classList.remove('hidden');
+    });
+
+    tabDeck.addEventListener('click', () => {
+      if (isGameActive) return;
+      tabDeck.classList.add('active');
+      tabGame.classList.remove('active');
+      deckSection.classList.remove('hidden');
+      gameSection.classList.add('hidden');
+      playHeaderGroup.classList.add('hidden');
+    });
+
+    // Category Filter Listener
+    filterCategory.addEventListener('change', (e) => {
+      if (isGameActive) return;
+      currentCategory = e.target.value;
+      if (currentMode === 'study') {
+        initStudyMode();
+      }
+    });
+
+    // Mode Toggle Listeners
+    modeRushBtn.addEventListener('click', () => switchMode('rush'));
+    modeStudyBtn.addEventListener('click', () => switchMode('study'));
+
+    function switchMode(mode) {
+      if (isGameActive) return;
+      sfx.playFlip();
+      currentMode = mode;
+
+      if (mode === 'rush') {
+        modeRushBtn.classList.add('active');
+        modeStudyBtn.classList.remove('active');
+        rushOptions.classList.remove('hidden');
+        studyOptions.classList.add('hidden');
+        rushControls.classList.remove('hidden');
+        studyControls.classList.add('hidden');
+
+        cardElement.classList.remove('flipped');
+        cardFront.textContent = 'Select Difficulty & Press "Start Rush"!';
+        cardBack.textContent = 'Answers will appear here.';
+        cardTagFront.textContent = 'General';
+      } else {
+        modeStudyBtn.classList.add('active');
+        modeRushBtn.classList.remove('active');
+        studyOptions.classList.remove('hidden');
+        rushOptions.classList.add('hidden');
+        studyControls.classList.remove('hidden');
+        rushControls.classList.add('hidden');
+
+        initStudyMode();
+      }
+    }
+
+    function getFilteredCards() {
+      if (currentCategory === 'All') return [...cardsData];
+      return cardsData.filter(card => (card.category || 'General').toLowerCase() === currentCategory.toLowerCase());
+    }
+
+    function initStudyMode() {
+      activeDeck = getFilteredCards();
+
+      if (activeDeck.length === 0) {
+        cardFront.textContent = `No cards found in "${currentCategory}" category.`;
+        cardBack.textContent = 'Select another category or add cards!';
+        cardTagFront.textContent = currentCategory;
+        studyCardNumEl.textContent = '0';
+        studyTotalCardsEl.textContent = '0';
+        return;
+      }
+
+      currentCardIndex = 0;
+      updateStudyCard();
+    }
+
+    function updateStudyCard() {
+      studyCardNumEl.textContent = currentCardIndex + 1;
+      studyTotalCardsEl.textContent = activeDeck.length;
+      loadCard();
+    }
+
+    // Study Mode Navigation Listeners
+    studyFlipBtn.addEventListener('click', flipCard);
+    
+    prevCardBtn.addEventListener('click', () => {
+      if (activeDeck.length === 0) return;
+      sfx.playFlip();
+      currentCardIndex = (currentCardIndex - 1 + activeDeck.length) % activeDeck.length;
+      updateStudyCard();
+    });
+
+    nextCardBtn.addEventListener('click', () => {
+      if (activeDeck.length === 0) return;
+      sfx.playFlip();
+      currentCardIndex = (currentCardIndex + 1) % activeDeck.length;
+      updateStudyCard();
+    });
+
+    shuffleDeckBtn.addEventListener('click', () => {
+      if (activeDeck.length === 0) return;
+      sfx.playFlip();
+      activeDeck.sort(() => Math.random() - 0.5);
+      currentCardIndex = 0;
+      updateStudyCard();
+    });
+
+    // Update Category Options Dropdown & Autocomplete Datalist
+    function updateCategoryDropdowns() {
+      const categories = ['All', ...new Set(cardsData.map(c => c.category || 'General'))];
+      
+      // Update Filter Select Dropdown
+      filterCategory.innerHTML = '';
+      categories.forEach(cat => {
+        const option = document.createElement('option');
+        option.value = cat;
+        option.textContent = cat === 'All' ? 'All Categories' : cat;
+        if (cat === currentCategory) option.selected = true;
+        filterCategory.appendChild(option);
+      });
+
+      // Update Custom Card Datalist Suggestions
+      categorySuggestions.innerHTML = '';
+      categories.filter(c => c !== 'All').forEach(cat => {
+        const opt = document.createElement('option');
+        opt.value = cat;
+        categorySuggestions.appendChild(opt);
+      });
+    }
+
+    // Save and Render Custom Cards
+    function saveCardsToStorage() {
+      localStorage.setItem('flashcard_rush_custom_cards', JSON.stringify(cardsData));
+      updateCardListUI();
+      updateCategoryDropdowns();
+      if (currentMode === 'study') initStudyMode();
+    }
+
+    function updateCardListUI() {
+      customCountEl.textContent = cardsData.length;
+      cardList.innerHTML = '';
+
+      cardsData.forEach((card, index) => {
+        const item = document.createElement('div');
+        item.className = 'card-item';
+        item.innerHTML = `
+          <div class="card-item-text">
+            <span>Q: ${escapeHtml(card.question)}</span>
+            A: ${escapeHtml(card.answer)}
+            <div class="card-item-category">🏷️ ${escapeHtml(card.category || 'General')}</div>
+          </div>
+          <button class="delete-card-btn" data-index="${index}" title="Delete Card">🗑️</button>
+        `;
+        cardList.appendChild(item);
+      });
+
+      document.querySelectorAll('.delete-card-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.dataset.index);
+          cardsData.splice(idx, 1);
+          saveCardsToStorage();
+        });
+      });
+    }
+
+    function escapeHtml(text) {
+      return text.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+      })[m]);
+    }
+
+    // Add New Flashcard
+    addCardForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const q = inputQuestion.value.trim();
+      const a = inputAnswer.value.trim();
+      const c = inputCategory.value.trim() || 'General';
+
+      if (q && a) {
+        cardsData.push({ question: q, answer: a, category: c });
+        saveCardsToStorage();
+        inputQuestion.value = '';
+        inputAnswer.value = '';
+        inputCategory.value = '';
+        sfx.playFlip();
+      }
+    });
+
+    // Reset Deck to Default
+    resetDeckBtn.addEventListener('click', () => {
+      if (confirm('Reset flashcards deck back to original default cards?')) {
+        cardsData = [...defaultCards];
+        currentCategory = 'All';
+        saveCardsToStorage();
+      }
+    });
+
+    // Load High Score per Difficulty
+    function getHighScore(diff) {
+      return parseInt(localStorage.getItem(`flashcard_rush_highscore_${diff}`)) || 0;
+    }
+
+    function updateHighScoreDisplay() {
+      const hs = getHighScore(currentDifficulty);
+      highScoreEl.textContent = hs;
+      diffLabelEl.textContent = currentDifficulty.charAt(0).toUpperCase() + currentDifficulty.slice(1);
+    }
+
+    // Difficulty Selector Listeners
+    diffButtons.forEach(btn => {
+      btn.addEventListener('click', () => {
+        if (isGameActive) return;
+
+        sfx.playFlip();
+        diffButtons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        currentDifficulty = btn.dataset.diff;
+        timeLeft = DIFFICULTY_CONFIG[currentDifficulty].time;
+        timerEl.textContent = timeLeft;
+
+        updateHighScoreDisplay();
+      });
+    });
+
+    // Event Listeners for Game Controls
+    startBtn.addEventListener('click', startGame);
+    flipBtn.addEventListener('click', flipCard);
+    cardElement.addEventListener('click', () => {
+      if (isGameActive || currentMode === 'study') flipCard();
+    });
+    correctBtn.addEventListener('click', () => handleAnswer(true));
+    wrongBtn.addEventListener('click', () => handleAnswer(false));
+    restartBtn.addEventListener('click', startGame);
+
+    function startGame() {
+      activeDeck = getFilteredCards();
+
+      if (activeDeck.length === 0) {
+        alert(`No flashcards found under "${currentCategory}" category! Please choose another category or add cards.`);
+        return;
+      }
+
+      sfx.playFlip();
+      score = 0;
+      streak = 0;
+      maxStreak = 0;
+      timeLeft = DIFFICULTY_CONFIG[currentDifficulty].time;
+      currentCardIndex = 0;
+      isGameActive = true;
+
+      activeDeck.sort(() => Math.random() - 0.5);
+
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+      timerEl.textContent = timeLeft;
+
+      gameOverModal.classList.add('hidden');
+      newRecordMsg.classList.add('hidden');
+      
+      startBtn.disabled = true;
+      flipBtn.disabled = false;
+      correctBtn.disabled = false;
+      wrongBtn.disabled = false;
+
+      diffButtons.forEach(b => b.style.pointerEvents = 'none');
+      modeStudyBtn.style.pointerEvents = 'none';
+      filterCategory.disabled = true;
+      tabDeck.style.pointerEvents = 'none';
+
+      loadCard();
+      
+      clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    function updateTimer() {
+      timeLeft--;
+      timerEl.textContent = timeLeft;
+
+      if (timeLeft <= 0) {
+        endGame();
+      }
+    }
+
+    function loadCard() {
+      cardElement.classList.remove('flipped');
+      setTimeout(() => {
+        if (activeDeck.length > 0) {
+          const card = activeDeck[currentCardIndex];
+          cardFront.textContent = card.question;
+          cardBack.textContent = card.answer;
+          cardTagFront.textContent = card.category || 'General';
+        }
+      }, 150);
+    }
+
+    function flipCard() {
+      sfx.playFlip();
+      cardElement.classList.toggle('flipped');
+    }
+
+    function triggerParticleBurst() {
+      const rect = cardContainer.getBoundingClientRect();
+      const parentRect = fxCanvas.getBoundingClientRect();
+      const centerX = rect.left - parentRect.left + rect.width / 2;
+      const centerY = rect.top - parentRect.top + rect.height / 2;
+      particleFX.burst(centerX, centerY, 45);
+    }
+
+    function handleAnswer(isCorrect) {
+      if (!isGameActive) return;
+
+      if (isCorrect) {
+        sfx.playCorrect();
+        triggerParticleBurst();
+        const mult = DIFFICULTY_CONFIG[currentDifficulty].multiplier;
+        score += Math.round((10 + streak * 2) * mult);
+        streak++;
+        if (streak > maxStreak) maxStreak = streak;
+      } else {
+        sfx.playWrong();
+        streak = 0;
+      }
+
+      scoreEl.textContent = score;
+      streakEl.textContent = streak;
+
+      currentCardIndex = (currentCardIndex + 1) % activeDeck.length;
+      loadCard();
+    }
+
+    function endGame() {
+      clearInterval(timerInterval);
+      isGameActive = false;
+      sfx.playTimeUp();
+
+      finalScoreEl.textContent = score;
+      finalStreakEl.textContent = maxStreak;
+
+      diffButtons.forEach(b => b.style.pointerEvents = 'auto');
+      modeStudyBtn.style.pointerEvents = 'auto';
+      filterCategory.disabled = false;
+      tabDeck.style.pointerEvents = 'auto';
+
+      const currentHS = getHighScore(currentDifficulty);
+      if (score > currentHS) {
+        localStorage.setItem(`flashcard_rush_highscore_${currentDifficulty}`, score);
+        highScoreEl.textContent = score;
+        newRecordMsg.classList.remove('hidden');
+      }
+
+      gameOverModal.classList.remove('hidden');
+
+      flipBtn.disabled = true;
+      correctBtn.disabled = true;
+      wrongBtn.disabled = true;
+      startBtn.disabled = false;
+    }
+
+    // Init App
+    updateHighScoreDisplay();
+    updateCardListUI();
+    updateCategoryDropdowns();
+  </script>
+</body>
+</html>
